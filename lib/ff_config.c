@@ -568,6 +568,7 @@ vdev_cfg_handler(struct ff_config *cfg, const char *section,
     if (cur->name == NULL) {
         cur->name = strdup(section);
         cur->vdev_id = vdevid;
+	cur->path = NULL;
     }
 
     if (strcmp(name, "iface") == 0) {
@@ -582,6 +583,16 @@ vdev_cfg_handler(struct ff_config *cfg, const char *section,
         cur->mac = strdup(value);
     } else if (strcmp(name, "cq") == 0) {
         cur->nb_cq = atoi(value);
+    } else if (strcmp(name, "blocksz") == 0) {
+        cur->block_size = atoi(value);
+    } else if (strcmp(name, "framesz") == 0) {
+        cur->frame_size = atoi(value);
+    } else if (strcmp(name, "framecnt") == 0) {
+        cur->frame_size = atoi(value);
+    } else if (strcmp(name, "qpairs") == 0) {
+        cur->qpairs = atoi(value);
+    } else if (strcmp(name, "qdissc_bypass") == 0) {
+        cur->qdisc_bypass = atoi(value);
     }
 
     return 1;
@@ -780,6 +791,9 @@ dpdk_args_setup(struct ff_config *cfg)
         sprintf(temp, "--file-prefix=container-%s", cfg->dpdk.file_prefix);
         dpdk_argv[n++] = strdup(temp);
     }
+    sprintf(temp, "--log-level='pmd.net:debug'");
+    dpdk_argv[n++] = strdup(temp);
+
     if (cfg->dpdk.pci_whitelist) {
         char* token;
         char* rest = cfg->dpdk.pci_whitelist;
@@ -793,31 +807,71 @@ dpdk_args_setup(struct ff_config *cfg)
 
     if (cfg->dpdk.nb_vdev) {
         for (i=0; i<cfg->dpdk.nb_vdev; i++) {
-            sprintf(temp, "--vdev=virtio_user%d,path=%s",
-                cfg->dpdk.vdev_cfgs[i].vdev_id,
-                cfg->dpdk.vdev_cfgs[i].path);
-            if (cfg->dpdk.vdev_cfgs[i].nb_queues) {
-                sprintf(temp2, ",queues=%u",
-                    cfg->dpdk.vdev_cfgs[i].nb_queues);
-                strcat(temp, temp2);
-            }
-            if (cfg->dpdk.vdev_cfgs[i].nb_cq) {
-                sprintf(temp2, ",cq=%u",
-                    cfg->dpdk.vdev_cfgs[i].nb_cq);
-                strcat(temp, temp2);
-            }
-            if (cfg->dpdk.vdev_cfgs[i].queue_size) {
-                sprintf(temp2, ",queue_size=%u",
-                    cfg->dpdk.vdev_cfgs[i].queue_size);
-                strcat(temp, temp2);
-            }
-            if (cfg->dpdk.vdev_cfgs[i].mac) {
-                sprintf(temp2, ",mac=%s",
-                    cfg->dpdk.vdev_cfgs[i].mac);
-                strcat(temp, temp2);
-            }
-            dpdk_argv[n++] = strdup(temp);
-        }
+	    if (cfg->dpdk.vdev_cfgs[i].path) { 
+	        sprintf(temp, "--vdev=virtio_user%d,path=%s",
+        	    cfg->dpdk.vdev_cfgs[i].vdev_id,
+                    cfg->dpdk.vdev_cfgs[i].path);
+                if (cfg->dpdk.vdev_cfgs[i].nb_queues) {
+                    sprintf(temp2, ",queues=%u",
+                       cfg->dpdk.vdev_cfgs[i].nb_queues);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].nb_cq) {
+                    sprintf(temp2, ",cq=%u",
+                       cfg->dpdk.vdev_cfgs[i].nb_cq);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].queue_size) {
+                    sprintf(temp2, ",queue_size=%u",
+                        cfg->dpdk.vdev_cfgs[i].queue_size);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].mac) {
+                    sprintf(temp2, ",mac=%s",
+                        cfg->dpdk.vdev_cfgs[i].mac);
+                    strcat(temp, temp2);
+                }
+                dpdk_argv[n++] = strdup(temp);
+            } else {
+		sprintf(temp, "--vdev=net_pcap%d,iface=%s,phy_mac=1",
+        	    cfg->dpdk.vdev_cfgs[i].vdev_id,
+                    cfg->dpdk.vdev_cfgs[i].iface);
+#ifdef NEVER		
+                if (cfg->dpdk.vdev_cfgs[i].qpairs) {
+                    sprintf(temp2, ",qpairs=%u",
+                       cfg->dpdk.vdev_cfgs[i].qpairs);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].qdisc_bypass) {
+                    sprintf(temp2, ",qdisc_bypass=%u",
+                       cfg->dpdk.vdev_cfgs[i].qdisc_bypass);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].block_size) {
+                    sprintf(temp2, ",blocksz=%u",
+                        cfg->dpdk.vdev_cfgs[i].block_size);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].frame_size) {
+                    sprintf(temp2, ",framesz=%u",
+                        cfg->dpdk.vdev_cfgs[i].frame_size);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].frame_cnt) {
+                    sprintf(temp2, ",framecnt=%u",
+                        cfg->dpdk.vdev_cfgs[i].frame_cnt);
+                    strcat(temp, temp2);
+                }
+                if (cfg->dpdk.vdev_cfgs[i].mac) {
+                    sprintf(temp2, ",mac=%s",
+                        cfg->dpdk.vdev_cfgs[i].mac);
+                    strcat(temp, temp2);
+                }
+ 
+#endif 
+                dpdk_argv[n++] = strdup(temp);
+	    }
+	}
         sprintf(temp, "--no-pci");
         dpdk_argv[n++] = strdup(temp);
         if (!cfg->dpdk.file_prefix) {

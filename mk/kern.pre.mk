@@ -24,7 +24,7 @@ _MINUS_O=	-O2
 endif
 ifeq (${MACHINE_CPUARCH},amd64)
 ifneq (${COMPILER_TYPE},clang)
-COPTFLAGS?=-O2 -fno-strict-aliasing -frename-registers -pipe -Wno-maybe-uninitialized #-finline-functions
+COPTFLAGS?=-O0 -fno-strict-aliasing -frename-registers -pipe -Wno-maybe-uninitialized -g #-finline-functions
 else
 COPTFLAGS?=-O2 -pipe
 endif

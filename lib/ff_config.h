@@ -100,6 +100,13 @@ struct ff_vdev_cfg {
     uint8_t nb_queues;
     uint8_t nb_cq;
     uint16_t queue_size;
+
+    /* af_packet PMD specific */
+    uint16_t block_size;
+    uint16_t frame_size;
+    uint16_t frame_cnt;
+    uint8_t qpairs;
+    uint8_t qdisc_bypass;
 };
 
 struct ff_bond_cfg {
